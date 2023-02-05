@@ -23,8 +23,10 @@ LFLAGS=--reread_libs --warn_sections --stack_size=$(STACK_SIZE) --heap_size=$(HE
 TARGET      =$(GEN_DIR)/$(PROJ_NAME).out
 MAP         =$(GEN_DIR)/$(PROJ_NAME).map
 SOURCES     =$(wildcard *.c)
+ASM_SRC     =$(wildcard *.asm)
 #Using .object instead of .obj in order to not conflict with the CCS build process
 OBJECTS     =$(patsubst %,$(GEN_DIR)/%,$(SOURCES:.c=.object))
+OBJECTS    +=$(patsubst %,$(GEN_DIR)/%,$(ASM_SRC:.asm=.object))
 
 all: printStart $(TARGET) printEnd
 
@@ -74,6 +76,13 @@ $(TARGET): $(OBJECTS) $(LINKER_COMMAND_FILE)
 
 # Invokes the compiler on all c files in the directory to create the object files
 $(GEN_DIR)/%.object: %.c
+	@mkdir -p $(GEN_DIR)
+	@echo ''
+	@echo 'Building file: $<'
+	@echo 'Invoking: PRU Compiler'
+	/usr/bin/clpru --include_path=$(PRU_CGT)/include $(INCLUDE) $(CFLAGS) -fe $@ $<
+
+$(GEN_DIR)/%.object: %.asm
 	@mkdir -p $(GEN_DIR)
 	@echo ''
 	@echo 'Building file: $<'

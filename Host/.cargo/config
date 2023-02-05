@@ -1,0 +1,5 @@
+[target.armv7-unknown-linux-gnueabihf]
+linker = "arm-none-linux-gnueabihf-gcc"
+
+[build]
+rustflags = "-C link-arg=--sysroot=/home/greg/App/gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf/arm-none-linux-gnueabihf/libc"
