@@ -1,9 +1,8 @@
- #include <stdint.h>
+#include <stdint.h>
 #include <pru_cfg.h>
 #include <pru_ctrl.h>
+#include <pru_iep.h>
 #include "resource_table_empty.h"
-
-extern void wait_cycles(uint32_t Delay);
 
 #define EPM_PATTERN_LEN    (7200u)
 typedef struct {
@@ -25,6 +24,15 @@ void main(void)
     // Clear SYSCFG[STANDBY_INIT] to enable OCP master port
     CT_CFG.SYSCFG_bit.STANDBY_INIT = 0;
 
+    CT_IEP.TMR_GLB_CFG_bit.CNT_EN = 0u;             /* Disable timer first */
+    CT_IEP.TMR_GLB_CFG_bit.DEFAULT_INC = 1u;        /* Set frequency to 200MHz */
+    CT_IEP.TMR_GLB_STS_bit.CNT_OVF = 1u;            /* Clear overflow bit status */
+    CT_IEP.TMR_CMP_STS_bit.CMP_HIT = 0xFFu;         /* Clear compare status register*/
+    CT_IEP.TMR_CMP_CFG_bit.CMP_EN = 1u;             /* Enable first compare register */
+    CT_IEP.TMR_CMP_CFG_bit.CMP0_RST_CNT_EN = 1u;    /* Reset counter on hit of CMP0 */
+    CT_IEP.TMR_COMPEN_bit.COMPEN_CNT = 0x0;         /* Disable compensation */
+    CT_IEP.TMR_CNT = 0u;
+
     for (Idx = 1u; Idx < EPM_PATTERN_LEN; Idx++)
     {
         Epm_SigGen->Patten[Idx] = 0u;
@@ -36,11 +44,17 @@ void main(void)
     Epm_SigGen->SigIndex = 0u;
 
     // Infinite loop
+    CT_IEP.TMR_GLB_CFG_bit.CNT_EN = 1u;
     while (1)
     {
+        CT_IEP.TMR_CMP0 = Epm_SigGen->Speed;
         __R30 = Epm_SigGen->Patten[Epm_SigGen->SigIndex] & Epm_SigGen->Activated;
         Epm_SigGen->SigIndex = (Epm_SigGen->SigIndex + 1u) % EPM_PATTERN_LEN;
-        wait_cycles(Epm_SigGen->Speed);
+        while((CT_IEP.TMR_CMP_STS_bit.CMP_HIT & 1u) == 0u)
+        {
+            /* Wait for timer compare register 0 to hit target value. */
+        }
+        CT_IEP.TMR_CMP_STS_bit.CMP_HIT = 0xFFu;
     }
 }
 

@@ -24,6 +24,7 @@ pub struct EpmSigCtrlr {
 }
 
 impl EpmSigCtrlr {
+    pub const PRU_FREQ: u32 = 200_000_000;
     pub fn new() -> EpmSigCtrlr {
         let mmap_path = CString::new("/dev/mem").expect("Cannot create path to /dev/mem");
         let mmap_fd = unsafe{ libc::open(mmap_path.as_ptr(), libc::O_RDWR | libc::O_SYNC)};
@@ -70,14 +71,21 @@ impl EpmSigCtrlr {
     }
 
     pub fn set_speed(&mut self, speed: u32) {
-        unsafe{
-            (*self.epm_siggen_ptr).speed = if speed > 0 { speed } else { 10 };
+        if speed != 0 {
+            let reg_val = (Self::PRU_FREQ/60)/speed;
+            unsafe{
+                (*self.epm_siggen_ptr).speed = reg_val;
+            }
+        }
+        else
+        {
+            self.set_state(0);
         }
     }
 
     pub fn get_speed(&self) -> u32 {
         unsafe{
-            (*self.epm_siggen_ptr).speed
+            (Self::PRU_FREQ/60)/(*self.epm_siggen_ptr).speed
         }
     }
 
@@ -89,7 +97,8 @@ impl EpmSigCtrlr {
 
     pub fn print_info(&self) {
         println!("Index: {}", self.get_ptr().sig_idx);
-        println!("Speed: {}", self.get_ptr().speed);
+        println!("Speed: {}", self.get_speed());
+        println!("Raw  : {}", self.get_ptr().speed);
     }
 }
 
@@ -123,5 +132,6 @@ fn main() {
             'q' => std::process::exit(0),
             _ => (),
         }
+        epm.print_info();
     }
 }
