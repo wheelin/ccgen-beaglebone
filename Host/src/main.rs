@@ -59,7 +59,7 @@ impl EpmSigCtrlr {
                 [0u8; 6]
             );
             (*epmctrl.epm_siggen_ptr).speed = 10000;
-            (*epmctrl.epm_siggen_ptr).activated = 0;
+            (*epmctrl.epm_siggen_ptr).activated = 0xFF;
         }
         epmctrl
     }
@@ -109,11 +109,8 @@ fn main() {
 
     let re = Regex::new(r"^s(\d+).*").unwrap();
 
-    println!("\n'u': increase speed, 'd': decrease speed, 'e': enable, 'n': disable, 'q': quit");
-    print!("> ");
+    print!("'u': increase speed, 'd': decrease speed, 'e': enable, 'n': disable, 'q': quit\n> ");
     for line in stdin.lock().lines() {
-        println!("\n'u': increase speed, 'd': decrease speed, 'e': enable, 'n': disable, 'q': quit");
-        print!("> ");
 
         let line_chars = line.unwrap();
         if line_chars.len() == 0 { continue; }
@@ -127,11 +124,12 @@ fn main() {
                 };
                 epm.set_speed(speed);
             }
-            'e' => epm.set_state(0),
-            'n' => epm.set_state(0xFF),
+            'e' => epm.set_state(0xFF),
+            'n' => epm.set_state(0),
             'q' => std::process::exit(0),
             _ => (),
         }
         epm.print_info();
+        print!("'u': increase speed, 'd': decrease speed, 'e': enable, 'n': disable, 'q': quit\n> ");
     }
 }
